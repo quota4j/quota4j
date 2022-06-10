@@ -1,4 +1,4 @@
-package io.github.quota4j;
+package io.github.quota4j.tokenbucket;
 
 import java.util.Optional;
 

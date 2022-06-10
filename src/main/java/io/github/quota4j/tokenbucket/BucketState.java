@@ -1,6 +1,4 @@
-package io.github.quota4j;
-
-import io.github.quota4j.tokenbucket.Limit;
+package io.github.quota4j.tokenbucket;
 
 import java.time.Instant;
 

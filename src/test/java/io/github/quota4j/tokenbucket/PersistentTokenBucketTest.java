@@ -1,8 +1,6 @@
 package io.github.quota4j.tokenbucket;
 
 
-import io.github.quota4j.BucketPersistence;
-import io.github.quota4j.BucketState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

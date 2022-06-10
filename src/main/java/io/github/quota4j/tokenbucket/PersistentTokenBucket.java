@@ -2,8 +2,6 @@ package io.github.quota4j.tokenbucket;
 
 
 
-import io.github.quota4j.BucketState;
-import io.github.quota4j.BucketPersistence;
 import io.github.quota4j.Quota;
 
 import java.time.Clock;
