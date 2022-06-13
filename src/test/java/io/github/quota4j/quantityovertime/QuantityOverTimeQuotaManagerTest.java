@@ -3,6 +3,7 @@ package io.github.quota4j.quantityovertime;
 
 import io.github.quota4j.TestClock;
 import io.github.quota4j.persistence.QuotaPersistence;
+import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
 import org.junit.jupiter.api.Test;

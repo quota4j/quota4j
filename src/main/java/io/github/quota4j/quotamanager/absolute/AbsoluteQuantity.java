@@ -1,6 +1,6 @@
 package io.github.quota4j.quotamanager.absolute;
 
-import io.github.quota4j.QuotaManager;
+import io.github.quota4j.quotamanager.QuotaManager;
 
 public final class AbsoluteQuantity implements QuotaManager {
     private final long maxQuantity;

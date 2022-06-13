@@ -1,7 +1,7 @@
 package io.github.quota4j.quotamanager.quantityovertime;
 
 
-import io.github.quota4j.QuotaManager;
+import io.github.quota4j.quotamanager.QuotaManager;
 import io.github.quota4j.persistence.QuotaPersistence;
 
 import java.time.Clock;

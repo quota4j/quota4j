@@ -1,6 +1,6 @@
 package io.github.quota4j.limit;
 
-import io.github.quota4j.QuotaManager;
+import io.github.quota4j.quotamanager.QuotaManager;
 import io.github.quota4j.model.ResourceQuota;
 import io.github.quota4j.persistence.ResourceQuotaPersistence;
 
