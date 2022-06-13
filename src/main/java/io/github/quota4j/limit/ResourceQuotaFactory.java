@@ -1,5 +1,7 @@
 package io.github.quota4j.limit;
 
+import io.github.quota4j.persistence.ResourceQuotaPersistence;
+
 public class ResourceQuotaFactory {
     private final ResourceQuotaPersistence resourceQuotaPersistence;
 

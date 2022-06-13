@@ -1,6 +1,8 @@
 package io.github.quota4j.limit;
 
 import io.github.quota4j.QuotaManager;
+import io.github.quota4j.model.ResourceQuota;
+import io.github.quota4j.persistence.ResourceQuotaPersistence;
 
 public class ResourceQuotaBuilder {
     private final ResourceQuotaPersistence resourceQuotaPersistence;

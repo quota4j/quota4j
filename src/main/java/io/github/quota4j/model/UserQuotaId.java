@@ -1,4 +1,4 @@
-package io.github.quota4j.limit;
+package io.github.quota4j.model;
 
 public record UserQuotaId(String username, String resourceId) {
     public static UserQuotaId idFor(String username, String resourceId) {

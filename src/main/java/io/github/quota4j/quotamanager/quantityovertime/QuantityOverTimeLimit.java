@@ -1,4 +1,4 @@
-package io.github.quota4j.quantityovertime;
+package io.github.quota4j.quotamanager.quantityovertime;
 
 import java.time.Duration;
 

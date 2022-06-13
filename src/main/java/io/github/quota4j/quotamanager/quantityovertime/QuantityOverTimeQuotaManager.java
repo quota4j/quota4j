@@ -1,8 +1,8 @@
-package io.github.quota4j.quantityovertime;
+package io.github.quota4j.quotamanager.quantityovertime;
 
 
 import io.github.quota4j.QuotaManager;
-import io.github.quota4j.limit.QuotaPersistence;
+import io.github.quota4j.persistence.QuotaPersistence;
 
 import java.time.Clock;
 import java.time.Duration;
