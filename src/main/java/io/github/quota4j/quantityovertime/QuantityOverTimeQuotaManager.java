@@ -1,29 +1,23 @@
-package io.github.quota4j.tokenbucket;
+package io.github.quota4j.quantityovertime;
 
 
-
-import io.github.quota4j.Quota;
+import io.github.quota4j.QuotaManager;
+import io.github.quota4j.limit.QuotaPersistence;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
 
-public class PersistentTokenBucket implements Quota {
+public class QuantityOverTimeQuotaManager implements QuotaManager {
+    private final QuotaPersistence quotaPersistence;
     private final Clock clock;
-    private final BucketPersistence bucketPersistence;
-    private BucketState currentState;
+    private QuantityOverTimeState currentState;
 
-    public PersistentTokenBucket(BucketPersistence bucketPersistence,  long defaultQuantity, Duration defaultDuration, Clock clock) {
-        this.bucketPersistence = bucketPersistence;
+    public QuantityOverTimeQuotaManager(QuotaPersistence quotaPersistence, QuantityOverTimeState initialState, Clock clock) {
+        this.quotaPersistence = quotaPersistence;
         this.clock = clock;
-        this.currentState = retrieveBucketState()
-                .orElseGet(() -> {
-                    BucketState bucketState = new BucketState(new Limit(defaultQuantity, defaultDuration), defaultQuantity, clock.instant());
-                    bucketPersistence.save(bucketState);
-                    return bucketState;
-                });
+        this.currentState = initialState;
     }
 
     @Override
@@ -53,16 +47,11 @@ public class PersistentTokenBucket implements Quota {
 
     private void updateState(long quantity, Instant requestInstant) {
         currentState = recreate(quantity, requestInstant);
-        bucketPersistence.save(currentState);
+        quotaPersistence.save(currentState);
     }
 
-    private BucketState recreate(long quantity, Instant lastRefill) {
-        return new BucketState(currentState.limit(), quantity, lastRefill);
+    private QuantityOverTimeState recreate(long quantity, Instant lastRefill) {
+        return new QuantityOverTimeState(currentState.limit(), quantity, lastRefill);
     }
-
-    private Optional<BucketState> retrieveBucketState() {
-        return bucketPersistence.getBucketState();
-    }
-
 
 }
