@@ -12,14 +12,6 @@ public class TestClock extends Clock {
 
     private Instant currentTime = Instant.EPOCH;
 
-    public TestClock() {
-
-    }
-
-    public TestClock(Instant currentTime) {
-        this.currentTime = currentTime;
-    }
-
     public void changeTime(Function<Instant, Instant> timeModifier) {
         this.currentTime = timeModifier.apply(this.currentTime);
     }

@@ -1,18 +1,20 @@
-package io.github.quota4j.limit;
+package io.github.quota4j.utils;
 
 import io.github.quota4j.quotamanager.QuotaManager;
 import io.github.quota4j.model.ResourceQuota;
-import io.github.quota4j.persistence.ResourceQuotaPersistence;
 
 public class ResourceQuotaBuilder {
-    private final ResourceQuotaPersistence resourceQuotaPersistence;
+
     private final String resourceId;
     private Class<?> quotaManager;
     private Object initialState;
 
-    ResourceQuotaBuilder(ResourceQuotaPersistence resourceQuotaPersistence, String resourceId) {
-        this.resourceQuotaPersistence = resourceQuotaPersistence;
+    ResourceQuotaBuilder(String resourceId) {
         this.resourceId = resourceId;
+    }
+
+    public static ResourceQuotaBuilder createWithResourceId(String resourceId) {
+        return new ResourceQuotaBuilder(resourceId);
     }
 
     public <T extends QuotaManager> ResourceQuotaBuilder withQuotaManager(Class<T> quotaManager) {
@@ -25,7 +27,7 @@ public class ResourceQuotaBuilder {
         return this;
     }
 
-    public void save() {
-        resourceQuotaPersistence.save(new ResourceQuota(resourceId, quotaManager.getName(), initialState));
+    public ResourceQuota build() {
+        return new ResourceQuota(resourceId, quotaManager.getName(), initialState);
     }
 }
