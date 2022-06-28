@@ -17,8 +17,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -26,7 +25,6 @@ import static org.mockito.Mockito.*;
 public class QuantityOverTimeQuotaManagerTest {
 
     private static final QuantityOverTimeLimit TEN_PER_DAY_LIMIT = new QuantityOverTimeLimit(10, Duration.ofDays(1));
-    public static final String TEST_BUCKET_KEY = "crawler.maxCrawlCount";
     private TestClock testClock = new TestClock();
 
     @Mock
@@ -36,26 +34,26 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldAllowToConsumeTokens() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         assertTrue(sut.tryConsume(1));
     }
 
     @Test
     public void shouldNotAllowToExceedQuota() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         assertFalse(sut.tryConsume(11));
     }
 
     @Test
     public void shouldNotAllowToExceedQuotaWithSubsequentRequests() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         assertTrue(sut.tryConsume(10));
         assertFalse(sut.tryConsume(1));
     }
 
     @Test
     public void shouldReplenishQuotaWhenTimeExpires() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         sut.tryConsume(10);
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.DAYS));
         assertTrue(sut.tryConsume(10));
@@ -63,7 +61,7 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldNotReplenishEarly() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         sut.tryConsume(10);
         Instant enoughTime = testClock.plus(1, ChronoUnit.DAYS);
         Instant notEnoughTime = enoughTime.minusMillis(1);
@@ -73,14 +71,14 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     public void shouldProvideRemainingQuantity() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         sut.tryConsume(5);
         assertThat(sut.getRemaining(), is(5L));
     }
 
     @Test
     public void shouldReplenishAvailableWithoutWrite() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         sut.tryConsume(5);
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.DAYS));
         assertThat(sut.getRemaining(), is(10L));
@@ -88,7 +86,7 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     public void quotaIsNotCumulative() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         assertThat(sut.getRemaining(), is(10L));
         testClock.changeTime(curTime -> curTime.plus(10, ChronoUnit.DAYS));
         assertThat(sut.getRemaining(), is(10L));
@@ -96,19 +94,17 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldReadRemainingTokensFromPassedState() {
-        sut = givenTokenBucket()
+        sut = givenQuotaManager()
                 .withLimit(TEN_PER_DAY_LIMIT)
                 .withRemainingTokens(2)
                 .build();
 
         assertThat(sut.getRemaining(), is(2L));
-        testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.DAYS));
-        assertThat(sut.getRemaining(), is(10L));
     }
 
     @Test
     void shouldReadLastRefillFromPassedState() {
-        sut = givenTokenBucket()
+        sut = givenQuotaManager()
                 .withLimit(TEN_PER_DAY_LIMIT)
                 .withRemainingTokens(2)
                 .withLastRefill(testClock.instant().minus(12, ChronoUnit.HOURS))
@@ -121,24 +117,37 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldNotPersistIfNoStateChange() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         sut.getRemaining();
         verify(quotaPersistence, never()).save(any());
     }
 
     @Test
-    void shouldUpdateWhenStateChanges() {
-        sut = givenTokenBucket().withLimit(TEN_PER_DAY_LIMIT).build();
+    void shouldUpdateRemainingWhenStateChanges() {
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
 
-        testClock.changeTime(curTime -> curTime.plus(30, ChronoUnit.SECONDS));
+        testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.HOURS));
         sut.tryConsume(1);
 
         verify(quotaPersistence, times(1)).save(
-                new QuantityOverTimeState(TEN_PER_DAY_LIMIT, TEN_PER_DAY_LIMIT.quantity() - 1, testClock.instant())
+                new QuantityOverTimeState(TEN_PER_DAY_LIMIT, TEN_PER_DAY_LIMIT.quantity() - 1, any())
         );
     }
 
-    private QuantityOverTimeQuotaManagerBuilder givenTokenBucket() {
+    @Test
+    void lastRefillIsNotUpdatedIfNoRefillOccur() {
+        sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
+
+        testClock.changeTime(curTime -> curTime.plus(12, ChronoUnit.HOURS));
+        // if last refill is updated with this time, while updating the remaining, then the next request will think only
+        // the last 12 hours have passed since the last refill
+        sut.tryConsume(10);
+        testClock.changeTime(curTime -> curTime.plus(12, ChronoUnit.HOURS));
+
+        assertTrue(sut.tryConsume(10));
+    }
+
+    private QuantityOverTimeQuotaManagerBuilder givenQuotaManager() {
         return new QuantityOverTimeQuotaManagerBuilder();
     }
 

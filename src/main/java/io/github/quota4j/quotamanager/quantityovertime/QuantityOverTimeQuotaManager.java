@@ -25,7 +25,7 @@ public class QuantityOverTimeQuotaManager implements QuotaManager {
         Instant requestInstant = clock.instant();
         refill(requestInstant);
         if (currentState.remainingTokens() >= quantity) {
-            updateState(currentState.remainingTokens() - quantity, requestInstant);
+            updateState(currentState.remainingTokens() - quantity, currentState.lastRefill());
             return true;
         } else {
             return false;
@@ -45,8 +45,8 @@ public class QuantityOverTimeQuotaManager implements QuotaManager {
         }
     }
 
-    private void updateState(long quantity, Instant requestInstant) {
-        currentState = recreate(quantity, requestInstant);
+    private void updateState(long quantity, Instant lastRefill) {
+        currentState = recreate(quantity, lastRefill);
         quotaPersistence.save(currentState);
     }
 
