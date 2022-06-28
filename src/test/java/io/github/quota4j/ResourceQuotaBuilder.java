@@ -1,12 +1,13 @@
-package io.github.quota4j.utils;
+package io.github.quota4j;
 
-import io.github.quota4j.quotamanager.QuotaManager;
+
 import io.github.quota4j.model.ResourceQuota;
+import io.github.quota4j.quotamanager.QuotaManager;
 
 public class ResourceQuotaBuilder {
 
     private final String resourceId;
-    private Class<?> quotaManager;
+    private String quotaManagerClassName;
     private Object initialState;
 
     ResourceQuotaBuilder(String resourceId) {
@@ -17,8 +18,8 @@ public class ResourceQuotaBuilder {
         return new ResourceQuotaBuilder(resourceId);
     }
 
-    public <T extends QuotaManager> ResourceQuotaBuilder withQuotaManager(Class<T> quotaManager) {
-        this.quotaManager = quotaManager;
+    public <T extends QuotaManager> ResourceQuotaBuilder withQuotaManager(String className) {
+        this.quotaManagerClassName = className;
         return this;
     }
 
@@ -28,6 +29,6 @@ public class ResourceQuotaBuilder {
     }
 
     public ResourceQuota build() {
-        return new ResourceQuota(resourceId, quotaManager.getName(), initialState);
+        return new ResourceQuota(resourceId, quotaManagerClassName, initialState);
     }
 }

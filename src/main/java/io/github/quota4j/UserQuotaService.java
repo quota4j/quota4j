@@ -1,12 +1,12 @@
 package io.github.quota4j;
 
-import io.github.quota4j.quotamanager.QuotaManager;
 import io.github.quota4j.model.ResourceQuota;
 import io.github.quota4j.model.UserQuotaId;
 import io.github.quota4j.model.UserQuotaState;
 import io.github.quota4j.persistence.QuotaPersistence;
 import io.github.quota4j.persistence.ResourceQuotaPersistence;
 import io.github.quota4j.persistence.UserQuotaPersistence;
+import io.github.quota4j.quotamanager.QuotaManager;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -28,34 +28,32 @@ public class UserQuotaService {
         this.clock = clock;
     }
 
-    public boolean tryAcquire(String username, String resourceId, int quantity) {
-        UserQuotaId userQuotaId = UserQuotaId.idFor(username, resourceId);
-        Optional<UserQuotaState> quotaState = userQuotaPersistence.findById(userQuotaId);
+    public boolean tryAcquire(String username, String resourceId, int quantity) throws InvalidQuotaManagerException {
+        UserQuotaId userQuotaId = UserQuotaId.create(username, resourceId);
+        Optional<UserQuotaState> possibleUserQuotaState = userQuotaPersistence.findById(userQuotaId);
 
-        QuotaManager quotaManager;
-        if (quotaState.isPresent()) {
-            UserQuotaState userQuotaState = quotaState.get();
-            quotaManager = getQuotaManager(userQuotaId, userQuotaState.quotaManagerClassName(), userQuotaState.state());
-        } else {
+        QuotaManager quotaManager = possibleUserQuotaState.map(userQuotaState -> {
+            return getQuotaManager(userQuotaId, userQuotaState.quotaManagerClassName(), userQuotaState.state());
+        }).orElseGet(() -> {
             ResourceQuota resourceQuota = resourceQuotaPersistence.findById(userQuotaId.resourceId()).orElseThrow();
-            quotaManager = getQuotaManager(userQuotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
-        }
+            return getQuotaManager(userQuotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
+        });
 
         return quotaManager.tryConsume(quantity);
     }
 
-    private QuotaManager getQuotaManager(UserQuotaId userQuotaId, String className, Object state) {
+    private QuotaManager getQuotaManager(UserQuotaId userQuotaId, String className, Object state) throws InvalidQuotaManagerException {
         return quotaManagerCache.computeIfAbsent(className, s -> createQuotaManager(userQuotaId, className, state));
     }
 
-    private QuotaManager createQuotaManager(UserQuotaId userQuotaId, String className, Object state) {
+    private QuotaManager createQuotaManager(UserQuotaId userQuotaId, String className, Object state) throws InvalidQuotaManagerException {
         try {
             Class<?> clazz = Class.forName(className);
             Constructor<?> constructor = clazz.getConstructor(QuotaPersistence.class, state.getClass(), Clock.class);
             return (QuotaManager) constructor.newInstance(createFor(userQuotaId, className), state, clock);
-        } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
+        } catch (ClassCastException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {
-            throw new RuntimeException(e);
+            throw new InvalidQuotaManagerException(e);
         }
     }
 

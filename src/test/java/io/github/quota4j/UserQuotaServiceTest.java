@@ -8,7 +8,6 @@ import io.github.quota4j.persistence.UserQuotaPersistence;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
-import io.github.quota4j.utils.ResourceQuotaBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,12 +22,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit.limitOf;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class QuantityOverTimeIntegrationTest {
+public class UserQuotaServiceTest {
 
     private static final String RESOURCE_ID = "crawler.maxCrawlsPerDay";
     private static final String USERNAME = "user123@localhost";
@@ -51,9 +49,9 @@ public class QuantityOverTimeIntegrationTest {
 
 
     @Test
-    void shouldAllowAcquisitionOfAvailableQuota() {
+    void shouldAllowAcquisitionOfAvailableQuota() throws InvalidQuotaManagerException {
         givenExistingResourceQuota()
-                .withResourceId(RESOURCE_ID)
+                .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 3, Instant.EPOCH))
                 .build();
@@ -62,9 +60,9 @@ public class QuantityOverTimeIntegrationTest {
     }
 
     @Test
-    void shouldDeclineWhenNotAvailableQuota() {
+    void shouldDeclineWhenNotAvailableQuota() throws InvalidQuotaManagerException {
         givenExistingResourceQuota()
-                .withResourceId(RESOURCE_ID)
+                .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
                 .build();
@@ -73,9 +71,9 @@ public class QuantityOverTimeIntegrationTest {
     }
 
     @Test
-    void shouldReplenishWithTime() {
+    void shouldReplenishWithTime() throws InvalidQuotaManagerException {
         givenExistingResourceQuota()
-                .withResourceId(RESOURCE_ID)
+                .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
                 .build();
@@ -86,9 +84,29 @@ public class QuantityOverTimeIntegrationTest {
     }
 
     @Test
-    void shouldRecoverStateFromUserQuotaIfExists() {
+    void shouldThrowExceptionIfClassManagerClassDoesNotExist() {
         givenExistingResourceQuota()
-                .withResourceId(RESOURCE_ID)
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManagerClassName("NonExistingQuotaManager")
+                .build();
+
+        assertThrows(InvalidQuotaManagerException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+    }
+
+    @Test
+    void shouldThrowExceptionIfClassManagerIsNotInstanceOfQuotaManager() {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManagerClassName(String.class.getName())
+                .build();
+        sut.tryAcquire(USERNAME, RESOURCE_ID, 1);
+        assertThrows(InvalidQuotaManagerException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+    }
+
+    @Test
+    void shouldRecoverStateFromUserQuotaIfExists() throws InvalidQuotaManagerException {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 3, Instant.EPOCH))
                 .build();
@@ -106,21 +124,21 @@ public class QuantityOverTimeIntegrationTest {
 
     private static class ResourceQuotaTestBuilder {
         private final ResourceQuotaPersistence resourceQuotaPersistenceMock;
-        private String resourceId;
-        private Class quotaManagerClass;
-        private Object initialState;
+        private String resourceId = RESOURCE_ID;
+        private String quotaManagerClassName;
+        private Object initialState = new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH);
 
         public ResourceQuotaTestBuilder(ResourceQuotaPersistence resourceQuotaPersistenceMock) {
             this.resourceQuotaPersistenceMock = resourceQuotaPersistenceMock;
         }
 
-        public ResourceQuotaTestBuilder withResourceId(String resourceId) {
+        public ResourceQuotaTestBuilder forResourceId(String resourceId) {
             this.resourceId = resourceId;
             return this;
         }
 
         public ResourceQuotaTestBuilder withQuotaManager(Class<?> quotaManagerClass) {
-            this.quotaManagerClass = quotaManagerClass;
+            this.quotaManagerClassName = quotaManagerClass.getName();
             return this;
         }
 
@@ -132,10 +150,15 @@ public class QuantityOverTimeIntegrationTest {
         public void build() {
             ResourceQuota resourceQuota = ResourceQuotaBuilder
                     .createWithResourceId(resourceId)
-                    .withQuotaManager(quotaManagerClass)
+                    .withQuotaManager(quotaManagerClassName)
                     .initialState(initialState)
                     .build();
             when(resourceQuotaPersistenceMock.findById(resourceId)).thenReturn(Optional.of(resourceQuota));
+        }
+
+        public ResourceQuotaTestBuilder withQuotaManagerClassName(String className) {
+            this.quotaManagerClassName = className;
+            return this;
         }
     }
 
