@@ -99,7 +99,7 @@ public class UserQuotaServiceTest {
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManagerClassName(String.class.getName())
                 .build();
-        sut.tryAcquire(USERNAME, RESOURCE_ID, 1);
+
         assertThrows(InvalidQuotaManagerException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
     }
 
