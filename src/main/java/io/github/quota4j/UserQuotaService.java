@@ -58,6 +58,8 @@ public class UserQuotaService {
     }
 
     public QuotaPersistence createFor(UserQuotaId userQuotaId, String className) {
-        return state -> userQuotaPersistence.save(new UserQuotaState(userQuotaId, className, state));
+        return state -> userQuotaPersistence.save(new UserQuotaStateImpl(userQuotaId, className, state));
     }
+
+    private record UserQuotaStateImpl(UserQuotaId id, String quotaManagerClassName, Object state) implements UserQuotaState { }
 }

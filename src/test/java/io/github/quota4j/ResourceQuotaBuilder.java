@@ -1,7 +1,6 @@
 package io.github.quota4j;
 
 
-import io.github.quota4j.model.ResourceQuota;
 import io.github.quota4j.quotamanager.QuotaManager;
 
 public class ResourceQuotaBuilder {
@@ -28,7 +27,7 @@ public class ResourceQuotaBuilder {
         return this;
     }
 
-    public ResourceQuota build() {
-        return new ResourceQuota(resourceId, quotaManagerClassName, initialState);
+    public ResourceQuotaImpl build() {
+        return new ResourceQuotaImpl(resourceId, quotaManagerClassName, initialState);
     }
 }
