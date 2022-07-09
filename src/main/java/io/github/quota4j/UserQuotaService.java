@@ -3,7 +3,7 @@ package io.github.quota4j;
 import io.github.quota4j.model.ResourceQuota;
 import io.github.quota4j.model.UserQuotaId;
 import io.github.quota4j.model.UserQuotaState;
-import io.github.quota4j.persistence.QuotaPersistence;
+import io.github.quota4j.persistence.QuotaManagerPersistence;
 import io.github.quota4j.persistence.ResourceQuotaPersistence;
 import io.github.quota4j.persistence.UserQuotaPersistence;
 import io.github.quota4j.quotamanager.QuotaManager;
@@ -49,7 +49,7 @@ public class UserQuotaService {
     private QuotaManager createQuotaManager(UserQuotaId userQuotaId, String className, Object state) throws InvalidQuotaManagerException {
         try {
             Class<?> clazz = Class.forName(className);
-            Constructor<?> constructor = clazz.getConstructor(QuotaPersistence.class, state.getClass(), Clock.class);
+            Constructor<?> constructor = clazz.getConstructor(QuotaManagerPersistence.class, state.getClass(), Clock.class);
             return (QuotaManager) constructor.newInstance(createFor(userQuotaId, className), state, clock);
         } catch (ClassCastException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {
@@ -57,7 +57,7 @@ public class UserQuotaService {
         }
     }
 
-    public QuotaPersistence createFor(UserQuotaId userQuotaId, String className) {
+    public QuotaManagerPersistence createFor(UserQuotaId userQuotaId, String className) {
         return state -> userQuotaPersistence.save(new UserQuotaStateImpl(userQuotaId, className, state));
     }
 

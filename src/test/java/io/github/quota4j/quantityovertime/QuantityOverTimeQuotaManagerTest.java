@@ -2,7 +2,7 @@ package io.github.quota4j.quantityovertime;
 
 
 import io.github.quota4j.TestClock;
-import io.github.quota4j.persistence.QuotaPersistence;
+import io.github.quota4j.persistence.QuotaManagerPersistence;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
@@ -28,7 +28,7 @@ public class QuantityOverTimeQuotaManagerTest {
     private TestClock testClock = new TestClock();
 
     @Mock
-    private QuotaPersistence quotaPersistence;
+    private QuotaManagerPersistence quotaManagerPersistence;
 
     QuantityOverTimeQuotaManager sut;
 
@@ -119,7 +119,7 @@ public class QuantityOverTimeQuotaManagerTest {
     void shouldNotPersistIfNoStateChange() {
         sut = givenQuotaManager().withLimit(TEN_PER_DAY_LIMIT).build();
         sut.getRemaining();
-        verify(quotaPersistence, never()).save(any());
+        verify(quotaManagerPersistence, never()).save(any());
     }
 
     @Test
@@ -129,7 +129,7 @@ public class QuantityOverTimeQuotaManagerTest {
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.HOURS));
         sut.tryConsume(1);
 
-        verify(quotaPersistence, times(1)).save(
+        verify(quotaManagerPersistence, times(1)).save(
                 new QuantityOverTimeState(TEN_PER_DAY_LIMIT, TEN_PER_DAY_LIMIT.quantity() - 1, any())
         );
     }
@@ -173,7 +173,7 @@ public class QuantityOverTimeQuotaManagerTest {
         }
 
         public QuantityOverTimeQuotaManager build() {
-            return new QuantityOverTimeQuotaManager(quotaPersistence, new QuantityOverTimeState(limit, remainingTokens, lastRefillInstant), testClock);
+            return new QuantityOverTimeQuotaManager(quotaManagerPersistence, new QuantityOverTimeState(limit, remainingTokens, lastRefillInstant), testClock);
         }
     }
 

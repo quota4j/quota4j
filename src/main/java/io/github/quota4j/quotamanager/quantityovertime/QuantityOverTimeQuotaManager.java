@@ -2,30 +2,28 @@ package io.github.quota4j.quotamanager.quantityovertime;
 
 
 import io.github.quota4j.quotamanager.QuotaManager;
-import io.github.quota4j.persistence.QuotaPersistence;
+import io.github.quota4j.persistence.QuotaManagerPersistence;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
 
-public class QuantityOverTimeQuotaManager implements QuotaManager {
-    private final QuotaPersistence quotaPersistence;
+public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTimeState> {
+    private final QuotaManagerPersistence quotaManagerPersistence;
     private final Clock clock;
-    private QuantityOverTimeState currentState;
 
-    public QuantityOverTimeQuotaManager(QuotaPersistence quotaPersistence, QuantityOverTimeState initialState, Clock clock) {
-        this.quotaPersistence = quotaPersistence;
+    public QuantityOverTimeQuotaManager(QuotaManagerPersistence quotaManagerPersistence, Clock clock) {
+        this.quotaManagerPersistence = quotaManagerPersistence;
         this.clock = clock;
-        this.currentState = initialState;
     }
 
     @Override
-    public boolean tryConsume(long quantity) {
+    public boolean tryConsume(QuantityOverTimeState currentState, long quantity) {
         Instant requestInstant = clock.instant();
-        refill(requestInstant);
+        currentState = refill(currentState, requestInstant);
         if (currentState.remainingTokens() >= quantity) {
-            updateState(currentState.remainingTokens() - quantity, currentState.lastRefill());
+            updateState(currentState, currentState.remainingTokens() - quantity, currentState.lastRefill());
             return true;
         } else {
             return false;
@@ -33,25 +31,24 @@ public class QuantityOverTimeQuotaManager implements QuotaManager {
     }
 
     @Override
-    public long getRemaining() {
-        refill(clock.instant());
+    public long getRemaining(QuantityOverTimeState currentState) {
+        currentState = refill(currentState, clock.instant());
         return currentState.remainingTokens();
     }
 
-    private void refill(Instant requestInstant) {
+    private QuantityOverTimeState refill(QuantityOverTimeState currentState, Instant requestInstant) {
         Duration durationSinceLastRefill = Duration.between(currentState.lastRefill(), requestInstant);
         if (durationSinceLastRefill.compareTo(currentState.limit().duration()) >= 0) {
-            updateState(currentState.limit().quantity(), requestInstant);
+            return updateState(currentState, currentState.limit().quantity(), requestInstant);
         }
+        return currentState;
     }
 
-    private void updateState(long quantity, Instant lastRefill) {
-        currentState = recreate(quantity, lastRefill);
-        quotaPersistence.save(currentState);
+    private QuantityOverTimeState updateState(QuantityOverTimeState currentState, long quantity, Instant lastRefill) {
+        QuantityOverTimeState newState = new QuantityOverTimeState(currentState.limit(), quantity, lastRefill);
+        quotaManagerPersistence.save(newState);
+        return newState;
     }
 
-    private QuantityOverTimeState recreate(long quantity, Instant lastRefill) {
-        return new QuantityOverTimeState(currentState.limit(), quantity, lastRefill);
-    }
 
 }
