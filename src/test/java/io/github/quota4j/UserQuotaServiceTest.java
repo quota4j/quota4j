@@ -47,6 +47,10 @@ public class UserQuotaServiceTest {
         sut = new UserQuotaService(resourceQuotaPersistence, userQuotaPersistence, testClock);
     }
 
+    @Test
+    void multipleUsers() {
+        fail();
+    }
 
     @Test
     void shouldAllowAcquisitionOfAvailableQuota() throws InvalidQuotaManagerException {

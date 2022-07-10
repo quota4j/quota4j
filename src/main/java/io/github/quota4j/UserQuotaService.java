@@ -3,63 +3,45 @@ package io.github.quota4j;
 import io.github.quota4j.model.ResourceQuota;
 import io.github.quota4j.model.UserQuotaId;
 import io.github.quota4j.model.UserQuotaState;
-import io.github.quota4j.persistence.QuotaManagerPersistence;
 import io.github.quota4j.persistence.ResourceQuotaPersistence;
 import io.github.quota4j.persistence.UserQuotaPersistence;
 import io.github.quota4j.quotamanager.QuotaManager;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.time.Clock;
 import java.util.HashMap;
-import java.util.Optional;
 
 public class UserQuotaService {
     private final ResourceQuotaPersistence resourceQuotaPersistence;
     private final UserQuotaPersistence userQuotaPersistence;
-    private final HashMap<String, QuotaManager> quotaManagerCache = new HashMap<>();
-    private final Clock clock;
+    private final HashMap<String, QuotaManager<Object>> quotaManagers = new HashMap<>();
 
     public UserQuotaService(ResourceQuotaPersistence resourceQuotaPersistence,
-                            UserQuotaPersistence userQuotaPersistence,
-                            Clock clock) {
+                            UserQuotaPersistence userQuotaPersistence) {
         this.resourceQuotaPersistence = resourceQuotaPersistence;
         this.userQuotaPersistence = userQuotaPersistence;
-        this.clock = clock;
     }
 
-    public boolean tryAcquire(String username, String resourceId, int quantity) throws InvalidQuotaManagerException {
+    public boolean tryAcquire(String username, String resourceId, int quantity) {
         UserQuotaId userQuotaId = UserQuotaId.create(username, resourceId);
-        Optional<UserQuotaState> possibleUserQuotaState = userQuotaPersistence.findById(userQuotaId);
 
-        QuotaManager quotaManager = possibleUserQuotaState.map(userQuotaState -> {
-            return getQuotaManager(userQuotaId, userQuotaState.quotaManagerClassName(), userQuotaState.state());
-        }).orElseGet(() -> {
-            ResourceQuota resourceQuota = resourceQuotaPersistence.findById(userQuotaId.resourceId()).orElseThrow();
-            return getQuotaManager(userQuotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
-        });
+        QuotaManager<Object> quotaManager = quotaManagers.get(resourceId);
 
-        return quotaManager.tryConsume(quantity);
+
+        UserQuotaState userQuotaState = userQuotaPersistence
+                .findById(userQuotaId)
+                .orElseGet(() -> {
+                    ResourceQuota resourceQuota = resourceQuotaPersistence.findById(userQuotaId.resourceId()).orElseThrow();
+                    return new UserQuotaStateImpl(UserQuotaId.create(username, resourceId), resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
+                });
+
+        return quotaManager.tryConsume(userQuotaState.state(), quantity);
     }
 
-    private QuotaManager getQuotaManager(UserQuotaId userQuotaId, String className, Object state) throws InvalidQuotaManagerException {
-        return quotaManagerCache.computeIfAbsent(className, s -> createQuotaManager(userQuotaId, className, state));
+    public QuotaManager<Object> registerQuotaManager(String resourceId, QuotaManager<Object> quotaManager) {
+        return quotaManagers.put(resourceId, quotaManager);
     }
 
-    private QuotaManager createQuotaManager(UserQuotaId userQuotaId, String className, Object state) throws InvalidQuotaManagerException {
-        try {
-            Class<?> clazz = Class.forName(className);
-            Constructor<?> constructor = clazz.getConstructor(QuotaManagerPersistence.class, state.getClass(), Clock.class);
-            return (QuotaManager) constructor.newInstance(createFor(userQuotaId, className), state, clock);
-        } catch (ClassCastException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException |
-                 IllegalAccessException e) {
-            throw new InvalidQuotaManagerException(e);
-        }
+    private record UserQuotaStateImpl(UserQuotaId id, String quotaManagerClassName,
+                                      Object state) implements UserQuotaState {
     }
 
-    public QuotaManagerPersistence createFor(UserQuotaId userQuotaId, String className) {
-        return state -> userQuotaPersistence.save(new UserQuotaStateImpl(userQuotaId, className, state));
-    }
-
-    private record UserQuotaStateImpl(UserQuotaId id, String quotaManagerClassName, Object state) implements UserQuotaState { }
 }
