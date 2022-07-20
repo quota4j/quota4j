@@ -47,26 +47,26 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldAllowToConsumeTokens() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         assertTrue(sut.tryConsume(state, 1));
     }
 
     @Test
     public void shouldNotAllowToExceedQuota() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         assertFalse(sut.tryConsume(state, 11));
     }
 
     @Test
     public void shouldNotAllowToExceedQuotaWithSubsequentRequests() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         assertTrue(sut.tryConsume(state, 10));
         assertFalse(sut.tryConsume(state, 1));
     }
 
     @Test
     public void shouldReplenishQuotaWhenTimeExpires() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.tryConsume(state, 10);
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.DAYS));
         assertTrue(sut.tryConsume(state, 10));
@@ -74,7 +74,7 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldNotReplenishEarly() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.tryConsume(state, 10);
         Instant enoughTime = testClock.plus(1, ChronoUnit.DAYS);
         Instant notEnoughTime = enoughTime.minusMillis(1);
@@ -84,14 +84,14 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     public void shouldProvideRemainingQuantity() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.tryConsume(state, 5);
         assertThat(sut.getRemaining(state), is(5L));
     }
 
     @Test
     public void shouldReplenishAvailableWithoutWrite() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.tryConsume(state, 5);
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.DAYS));
         assertThat(sut.getRemaining(state), is(10L));
@@ -99,7 +99,7 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     public void quotaIsNotCumulative() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         assertThat(sut.getRemaining(state), is(10L));
         testClock.changeTime(curTime -> curTime.plus(10, ChronoUnit.DAYS));
         assertThat(sut.getRemaining(state), is(10L));
@@ -110,7 +110,7 @@ public class QuantityOverTimeQuotaManagerTest {
         givenQuantityOverTimeState()
                 .withLimit(TEN_PER_DAY_LIMIT)
                 .withRemainingTokens(2)
-                .build();
+                .init();
 
         assertThat(sut.getRemaining(state), is(2L));
     }
@@ -121,7 +121,7 @@ public class QuantityOverTimeQuotaManagerTest {
                 .withLimit(TEN_PER_DAY_LIMIT)
                 .withRemainingTokens(2)
                 .withLastRefill(testClock.instant().minus(12, ChronoUnit.HOURS))
-                .build();
+                .init();
 
         assertThat(sut.getRemaining(state), is(2L));
         testClock.changeTime(curTime -> curTime.plus(12, ChronoUnit.HOURS));
@@ -130,14 +130,14 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void shouldNotPersistIfNoStateChange() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.getRemaining(state);
         verify(quotaManagerPersistence, never()).save(any());
     }
 
     @Test
     void shouldUpdateRemainingWhenStateChanges() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
 
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.HOURS));
         sut.tryConsume(state, 1);
@@ -149,7 +149,7 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @Test
     void lastRefillIsNotUpdatedIfNoRefillOccur() {
-        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).build();
+        givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
 
         testClock.changeTime(curTime -> curTime.plus(12, ChronoUnit.HOURS));
         // if last refill is updated with this time, while updating the remaining, then the next request will think only
@@ -185,7 +185,7 @@ public class QuantityOverTimeQuotaManagerTest {
             return this;
         }
 
-        public void build() {
+        public void init() {
             state = new QuantityOverTimeState(limit, remainingTokens, lastRefillInstant);
         }
     }
