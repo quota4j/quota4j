@@ -12,19 +12,16 @@ import java.util.HashMap;
 public class UserQuotaService {
     private final ResourceQuotaPersistence resourceQuotaPersistence;
     private final UserQuotaPersistence userQuotaPersistence;
-    private final HashMap<String, QuotaManager<Object>> quotaManagers = new HashMap<>();
+    private final HashMap<String, QuotaManagerFactory> quotaManagerFactories = new HashMap<>();
+    private final HashMap<UserQuotaId, QuotaManager<?>> quotaManagers = new HashMap<>();
 
-    public UserQuotaService(ResourceQuotaPersistence resourceQuotaPersistence,
-                            UserQuotaPersistence userQuotaPersistence) {
+    public UserQuotaService(ResourceQuotaPersistence resourceQuotaPersistence, UserQuotaPersistence userQuotaPersistence) {
         this.resourceQuotaPersistence = resourceQuotaPersistence;
         this.userQuotaPersistence = userQuotaPersistence;
     }
 
     public boolean tryAcquire(String username, String resourceId, int quantity) {
         UserQuotaId userQuotaId = UserQuotaId.create(username, resourceId);
-
-        QuotaManager<Object> quotaManager = quotaManagers.get(resourceId);
-
 
         UserQuotaState userQuotaState = userQuotaPersistence
                 .findById(userQuotaId)
@@ -33,11 +30,20 @@ public class UserQuotaService {
                     return new UserQuotaStateImpl(UserQuotaId.create(username, resourceId), resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
                 });
 
-        return quotaManager.tryConsume(userQuotaState.state(), quantity);
+        return getQuotaManager(userQuotaId, userQuotaState)
+                .tryConsume(userQuotaState.state(), quantity);
     }
 
-    public QuotaManager<Object> registerQuotaManager(String resourceId, QuotaManager<Object> quotaManager) {
-        return quotaManagers.put(resourceId, quotaManager);
+    private QuotaManager<Object> getQuotaManager(UserQuotaId userQuotaId, UserQuotaState userQuotaState) {
+        QuotaManager<?> quotaManager = quotaManagers.computeIfAbsent(userQuotaId, it -> {
+            QuotaManagerFactory quotaManagerFactory = quotaManagerFactories.get(userQuotaState.quotaManagerClassName());
+            return quotaManagerFactory.build(state -> userQuotaPersistence.save(new UserQuotaStateImpl(userQuotaId, userQuotaState.quotaManagerClassName(), state)));
+        });
+        return (QuotaManager<Object>) quotaManager;
+    }
+
+    public void registerQuotaManager(String className, QuotaManagerFactory quotaManagerFactory) {
+        quotaManagerFactories.computeIfAbsent(className, s -> quotaManagerFactory);
     }
 
     private record UserQuotaStateImpl(UserQuotaId id, String quotaManagerClassName,

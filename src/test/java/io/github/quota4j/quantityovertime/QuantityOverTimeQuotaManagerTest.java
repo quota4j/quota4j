@@ -2,7 +2,7 @@ package io.github.quota4j.quantityovertime;
 
 
 import io.github.quota4j.TestClock;
-import io.github.quota4j.persistence.QuotaManagerPersistence;
+import io.github.quota4j.persistence.QuotaManagerStateChangeListener;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
@@ -31,9 +31,9 @@ public class QuantityOverTimeQuotaManagerTest {
 
     QuantityOverTimeState state;
 
-    private QuotaManagerPersistence quotaManagerPersistence = Mockito.spy(new QuotaManagerPersistence() {
+    private QuotaManagerStateChangeListener quotaManagerStateChangeListener = Mockito.spy(new QuotaManagerStateChangeListener() {
         @Override
-        public void save(Object newState) {
+        public void stateChanged(Object newState) {
             state = (QuantityOverTimeState) newState;
         }
     });
@@ -42,7 +42,7 @@ public class QuantityOverTimeQuotaManagerTest {
 
     @BeforeEach
     void setUp() {
-        sut = new QuantityOverTimeQuotaManager(quotaManagerPersistence, testClock);
+        sut = new QuantityOverTimeQuotaManager(quotaManagerStateChangeListener, testClock);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class QuantityOverTimeQuotaManagerTest {
     void shouldNotPersistIfNoStateChange() {
         givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.getRemaining(state);
-        verify(quotaManagerPersistence, never()).save(any());
+        verify(quotaManagerStateChangeListener, never()).stateChanged(any());
     }
 
     @Test
@@ -142,7 +142,7 @@ public class QuantityOverTimeQuotaManagerTest {
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.HOURS));
         sut.tryConsume(state, 1);
 
-        verify(quotaManagerPersistence, times(1)).save(
+        verify(quotaManagerStateChangeListener, times(1)).stateChanged(
                 new QuantityOverTimeState(TEN_PER_DAY_LIMIT, TEN_PER_DAY_LIMIT.quantity() - 1, any())
         );
     }

@@ -2,19 +2,20 @@ package io.github.quota4j.quotamanager.quantityovertime;
 
 
 import io.github.quota4j.quotamanager.QuotaManager;
-import io.github.quota4j.persistence.QuotaManagerPersistence;
+import io.github.quota4j.persistence.QuotaManagerStateChangeListener;
 
+import java.io.Serializable;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
 
-public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTimeState> {
-    private final QuotaManagerPersistence quotaManagerPersistence;
+public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTimeState>, Serializable {
+    private final QuotaManagerStateChangeListener stateChangeListener;
     private final Clock clock;
 
-    public QuantityOverTimeQuotaManager(QuotaManagerPersistence quotaManagerPersistence, Clock clock) {
-        this.quotaManagerPersistence = quotaManagerPersistence;
+    public QuantityOverTimeQuotaManager(QuotaManagerStateChangeListener listener, Clock clock) {
+        this.stateChangeListener = listener;
         this.clock = clock;
     }
 
@@ -46,7 +47,7 @@ public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTi
 
     private QuantityOverTimeState updateState(QuantityOverTimeState currentState, long quantity, Instant lastRefill) {
         QuantityOverTimeState newState = new QuantityOverTimeState(currentState.limit(), quantity, lastRefill);
-        quotaManagerPersistence.save(newState);
+        stateChangeListener.stateChanged(newState);
         return newState;
     }
 

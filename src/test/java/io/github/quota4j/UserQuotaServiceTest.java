@@ -44,7 +44,8 @@ public class UserQuotaServiceTest {
 
     @BeforeEach
     void setUp() {
-        sut = new UserQuotaService(resourceQuotaPersistence, userQuotaPersistence, testClock);
+        sut = new UserQuotaService(resourceQuotaPersistence, userQuotaPersistence);
+        sut.registerQuotaManager(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(listener, testClock));
     }
 
     @Test
@@ -53,14 +54,24 @@ public class UserQuotaServiceTest {
     }
 
     @Test
-    void shouldAllowAcquisitionOfAvailableQuota() throws InvalidQuotaManagerException {
+    void shouldAllowAcquisitionOfAvailableQuota() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
-                .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 3, Instant.EPOCH))
                 .build();
 
-        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 3));
+        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
+    }
+
+    @Test
+    void shouldDeclineIfPreviouslyEmptied() {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManager(QuantityOverTimeQuotaManager.class)
+                .build();
+
+        sut.tryAcquire(USERNAME, RESOURCE_ID, 10);
+        assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
     }
 
     @Test
@@ -88,17 +99,7 @@ public class UserQuotaServiceTest {
     }
 
     @Test
-    void shouldThrowExceptionIfClassManagerClassDoesNotExist() {
-        givenExistingResourceQuota()
-                .forResourceId(RESOURCE_ID)
-                .withQuotaManagerClassName("NonExistingQuotaManager")
-                .build();
-
-        assertThrows(InvalidQuotaManagerException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
-    }
-
-    @Test
-    void shouldThrowExceptionIfClassManagerIsNotInstanceOfQuotaManager() {
+    void shouldFailFastIfQuotaManagerIsNotRegistered() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManagerClassName(String.class.getName())
@@ -108,18 +109,15 @@ public class UserQuotaServiceTest {
     }
 
     @Test
-    void shouldRecoverStateFromUserQuotaIfExists() throws InvalidQuotaManagerException {
+    void shouldRecoverStateFromUserQuotaIfExists() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
-                .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 3, Instant.EPOCH))
+                .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH))
                 .build();
 
-        sut.tryAcquire(USERNAME, RESOURCE_ID, 3);
-
-        sut = new UserQuotaService(resourceQuotaPersistence, userQuotaPersistence, testClock);
-
-        assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 3));
+        sut.tryAcquire(USERNAME, RESOURCE_ID, 10);
+        assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
     }
 
     private ResourceQuotaTestBuilder givenExistingResourceQuota() {
