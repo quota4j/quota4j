@@ -31,6 +31,8 @@ public class UserQuotaServiceTest {
     private static final String RESOURCE_ID = "crawler.maxCrawlsPerDay";
     private static final String USERNAME = "user123@localhost";
     public static final QuantityOverTimeLimit TEN_PER_DAY_LIMIT = limitOf(10, Duration.ofDays(1));
+    public static final QuantityOverTimeLimit ONE_PER_SECOND_LIMIT = limitOf(1, Duration.ofSeconds(1));
+
 
     TestClock testClock = new TestClock();
 
@@ -45,12 +47,41 @@ public class UserQuotaServiceTest {
     @BeforeEach
     void setUp() {
         sut = new UserQuotaService(resourceQuotaPersistence, userQuotaPersistence);
-        sut.registerQuotaManager(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(listener, testClock));
+        sut.registerQuotaManagerFactory(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(listener, testClock));
     }
 
     @Test
-    void multipleUsers() {
-        fail();
+    void shouldHandleStateForMultipleUsers() {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManager(QuantityOverTimeQuotaManager.class)
+                .build();
+
+        sut.tryAcquire("USER1", RESOURCE_ID, 10);
+        sut.tryAcquire("USER2", RESOURCE_ID, 5);
+
+        assertFalse(sut.tryAcquire("USER1", RESOURCE_ID, 1));
+        assertTrue(sut.tryAcquire("USER2", RESOURCE_ID, 5));
+    }
+
+    @Test
+    void usersCanHaveMultipleResources() {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManager(QuantityOverTimeQuotaManager.class)
+                .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH))
+                .build();
+        givenExistingResourceQuota()
+                .forResourceId("crawler.maxRecommendationsPerDay")
+                .withQuotaManager(QuantityOverTimeQuotaManager.class)
+                .havingInitialState(new QuantityOverTimeState(ONE_PER_SECOND_LIMIT, 1, Instant.EPOCH))
+                .build();
+
+
+        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
+        assertTrue(sut.tryAcquire(USERNAME, "crawler.maxRecommendationsPerDay", 1));
+        testClock.changeTime(instant -> instant.plusSeconds(1));
+        assertTrue(sut.tryAcquire(USERNAME, "crawler.maxRecommendationsPerDay", 1));
     }
 
     @Test
@@ -79,7 +110,7 @@ public class UserQuotaServiceTest {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
-                .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
+                .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
                 .build();
 
         assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
@@ -90,7 +121,7 @@ public class UserQuotaServiceTest {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
-                .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
+                .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
                 .build();
 
         testClock.changeTime(cur -> cur.plus(1, ChronoUnit.DAYS));
@@ -105,7 +136,7 @@ public class UserQuotaServiceTest {
                 .withQuotaManagerClassName(String.class.getName())
                 .build();
 
-        assertThrows(InvalidQuotaManagerException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+        assertThrows(QuotaManagerNotRegisteredException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
     }
 
     @Test
@@ -113,7 +144,7 @@ public class UserQuotaServiceTest {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
-                .initialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH))
+                .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH))
                 .build();
 
         sut.tryAcquire(USERNAME, RESOURCE_ID, 10);
@@ -144,7 +175,7 @@ public class UserQuotaServiceTest {
             return this;
         }
 
-        public ResourceQuotaTestBuilder initialState(Object initialState) {
+        public ResourceQuotaTestBuilder havingInitialState(Object initialState) {
             this.initialState = initialState;
             return this;
         }
