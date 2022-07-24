@@ -106,7 +106,7 @@ public class UserQuotaServiceTest {
     }
 
     @Test
-    void shouldDeclineWhenNotAvailableQuota() throws InvalidQuotaManagerException {
+    void shouldDeclineWhenNotAvailableQuota() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
@@ -117,7 +117,7 @@ public class UserQuotaServiceTest {
     }
 
     @Test
-    void shouldReplenishWithTime() throws InvalidQuotaManagerException {
+    void shouldReplenishWithTime() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
