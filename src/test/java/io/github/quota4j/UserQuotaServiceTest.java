@@ -32,6 +32,7 @@ public class UserQuotaServiceTest {
     private static final String USERNAME = "user123@localhost";
     public static final QuantityOverTimeLimit TEN_PER_DAY_LIMIT = limitOf(10, Duration.ofDays(1));
     public static final QuantityOverTimeLimit ONE_PER_SECOND_LIMIT = limitOf(1, Duration.ofSeconds(1));
+    public static final String RESOURCE_ID2 = "crawler.maxRecommendationsPerDay";
 
 
     TestClock testClock = new TestClock();
@@ -72,16 +73,16 @@ public class UserQuotaServiceTest {
                 .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH))
                 .build();
         givenExistingResourceQuota()
-                .forResourceId("crawler.maxRecommendationsPerDay")
+                .forResourceId(RESOURCE_ID2)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .havingInitialState(new QuantityOverTimeState(ONE_PER_SECOND_LIMIT, 1, Instant.EPOCH))
                 .build();
 
 
         assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
-        assertTrue(sut.tryAcquire(USERNAME, "crawler.maxRecommendationsPerDay", 1));
+        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID2, 1));
         testClock.changeTime(instant -> instant.plusSeconds(1));
-        assertTrue(sut.tryAcquire(USERNAME, "crawler.maxRecommendationsPerDay", 1));
+        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID2, 1));
     }
 
     @Test
