@@ -141,6 +141,11 @@ public class UserQuotaServiceTest {
     }
 
     @Test
+    void shouldFailFastIfResourceQuotaDoesNotExist() {
+        assertThrows(ResourceQuotaNotFoundException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+    }
+
+    @Test
     void shouldRecoverStateFromUserQuotaIfExists() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)

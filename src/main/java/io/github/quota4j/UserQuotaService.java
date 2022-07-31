@@ -36,8 +36,8 @@ public class UserQuotaService {
         quotaManagerFactories.computeIfAbsent(className, s -> quotaManagerFactory);
     }
 
-    private UserQuotaStateImpl createFromResourceQuota(UserQuotaId userQuotaId) {
-        ResourceQuota resourceQuota = resourceQuotaPersistence.findById(userQuotaId.resourceId()).orElseThrow();
+    private UserQuotaState createFromResourceQuota(UserQuotaId userQuotaId) {
+        ResourceQuota resourceQuota = resourceQuotaPersistence.findById(userQuotaId.resourceId()).orElseThrow(() -> new ResourceQuotaNotFoundException(userQuotaId.resourceId()));
         return new UserQuotaStateImpl(userQuotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
     }
 
