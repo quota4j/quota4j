@@ -33,7 +33,7 @@ public class UserQuotaService {
     }
 
     public void registerQuotaManagerFactory(String className, QuotaManagerFactory quotaManagerFactory) {
-        quotaManagerFactories.computeIfAbsent(className, s -> quotaManagerFactory);
+        quotaManagerFactories.computeIfAbsent(className, ignored -> quotaManagerFactory);
     }
 
     private UserQuotaState createFromResourceQuota(UserQuotaId userQuotaId) {
