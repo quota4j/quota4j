@@ -29,7 +29,7 @@ public class UserQuotaService {
                 .orElseGet(() -> createFromResourceQuota(userQuotaId));
 
         return getQuotaManager(userQuotaId, userQuotaState)
-                .tryConsume(userQuotaState.state(), quantity);
+                .tryConsume(userQuotaState.currentState(), quantity);
     }
 
     public void registerQuotaManagerFactory(String className, QuotaManagerFactory quotaManagerFactory) {
@@ -38,20 +38,18 @@ public class UserQuotaService {
 
     private UserQuotaState createFromResourceQuota(UserQuotaId userQuotaId) {
         ResourceQuota resourceQuota = resourceQuotaPersistence.findById(userQuotaId.resourceId()).orElseThrow(() -> new ResourceQuotaNotFoundException(userQuotaId.resourceId()));
-        return new UserQuotaStateImpl(userQuotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
+        return new UserQuotaState(userQuotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
     }
 
     private QuotaManager<Object> getQuotaManager(UserQuotaId userQuotaId, UserQuotaState userQuotaState) {
         QuotaManager<?> quotaManager = quotaManagers.computeIfAbsent(userQuotaId, it -> {
             String quotaManagerClassName = userQuotaState.quotaManagerClassName();
             QuotaManagerFactory quotaManagerFactory = Optional.ofNullable(quotaManagerFactories.get(quotaManagerClassName)).orElseThrow(() -> new QuotaManagerNotRegisteredException(quotaManagerClassName));
-            return quotaManagerFactory.build(state -> userQuotaPersistence.save(new UserQuotaStateImpl(userQuotaId, quotaManagerClassName, state)));
+            return quotaManagerFactory.build(state -> userQuotaPersistence.save(new UserQuotaState(userQuotaId, quotaManagerClassName, state)));
         });
         return (QuotaManager<Object>) quotaManager;
     }
 
-    private record UserQuotaStateImpl(UserQuotaId id, String quotaManagerClassName,
-                                      Object state) implements UserQuotaState {
-    }
+
 
 }

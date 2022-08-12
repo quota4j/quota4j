@@ -1,16 +1,15 @@
 package io.github.quota4j.quotamanager.quantityovertime;
 
 
-import io.github.quota4j.quotamanager.QuotaManager;
 import io.github.quota4j.persistence.QuotaManagerStateChangeListener;
+import io.github.quota4j.quotamanager.QuotaManager;
 
-import java.io.Serializable;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 
 
-public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTimeState>, Serializable {
+public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTimeState> {
     private final QuotaManagerStateChangeListener stateChangeListener;
     private final Clock clock;
 

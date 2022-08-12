@@ -1,7 +1,7 @@
 package io.github.quota4j.model;
 
-public interface UserQuotaState {
-    UserQuotaId id();
-    String quotaManagerClassName();
-    Object state();
+import java.io.Serializable;
+
+public record UserQuotaState(UserQuotaId id, String quotaManagerClassName, Object currentState) implements Serializable {
+
 }
