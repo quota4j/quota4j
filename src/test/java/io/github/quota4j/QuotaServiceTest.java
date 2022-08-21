@@ -1,10 +1,10 @@
 package io.github.quota4j;
 
 import io.github.quota4j.model.ResourceQuota;
-import io.github.quota4j.model.UserQuotaId;
-import io.github.quota4j.model.UserQuotaState;
+import io.github.quota4j.model.QuotaId;
+import io.github.quota4j.model.QuotaState;
 import io.github.quota4j.persistence.ResourceQuotaPersistence;
-import io.github.quota4j.persistence.UserQuotaPersistence;
+import io.github.quota4j.persistence.QuotaPersistence;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
@@ -26,10 +26,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class UserQuotaServiceTest {
+public class QuotaServiceTest {
 
     private static final String RESOURCE_ID = "crawler.maxCrawlsPerDay";
-    private static final String USERNAME = "user123@localhost";
+    private static final String OWNER_ID = "owner123@localhost";
     public static final QuantityOverTimeLimit TEN_PER_DAY_LIMIT = limitOf(10, Duration.ofDays(1));
     public static final QuantityOverTimeLimit ONE_PER_SECOND_LIMIT = limitOf(1, Duration.ofSeconds(1));
     public static final String RESOURCE_ID2 = "crawler.maxRecommendationsPerDay";
@@ -37,36 +37,36 @@ public class UserQuotaServiceTest {
 
     TestClock testClock = new TestClock();
 
-    private UserQuotaPersistence userQuotaPersistence = new TestUserQuotaPersistence();
+    private QuotaPersistence quotaPersistence = new TestQuotaPersistence();
 
     @Mock
     private ResourceQuotaPersistence resourceQuotaPersistence;
 
-    UserQuotaService sut;
+    QuotaService sut;
 
 
     @BeforeEach
     void setUp() {
-        sut = new UserQuotaService(resourceQuotaPersistence, userQuotaPersistence);
+        sut = new QuotaService(resourceQuotaPersistence, quotaPersistence);
         sut.registerQuotaManagerFactory(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(listener, testClock));
     }
 
     @Test
-    void shouldHandleStateForMultipleUsers() {
+    void shouldHandleStateForMultipleOwners() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .build();
 
-        sut.tryAcquire("USER1", RESOURCE_ID, 10);
-        sut.tryAcquire("USER2", RESOURCE_ID, 5);
+        sut.tryAcquire("OWNER1", RESOURCE_ID, 10);
+        sut.tryAcquire("OWNER2", RESOURCE_ID, 5);
 
-        assertFalse(sut.tryAcquire("USER1", RESOURCE_ID, 1));
-        assertTrue(sut.tryAcquire("USER2", RESOURCE_ID, 5));
+        assertFalse(sut.tryAcquire("OWNER1", RESOURCE_ID, 1));
+        assertTrue(sut.tryAcquire("OWNER2", RESOURCE_ID, 5));
     }
 
     @Test
-    void usersCanHaveMultipleResources() {
+    void ownerCanHaveMultipleResources() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
@@ -79,10 +79,10 @@ public class UserQuotaServiceTest {
                 .build();
 
 
-        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
-        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID2, 1));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID2, 1));
         testClock.changeTime(instant -> instant.plusSeconds(1));
-        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID2, 1));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID2, 1));
     }
 
     @Test
@@ -92,7 +92,7 @@ public class UserQuotaServiceTest {
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .build();
 
-        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
     }
 
     @Test
@@ -102,8 +102,8 @@ public class UserQuotaServiceTest {
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .build();
 
-        sut.tryAcquire(USERNAME, RESOURCE_ID, 10);
-        assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+        sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10);
+        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class UserQuotaServiceTest {
                 .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
                 .build();
 
-        assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
+        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
     }
 
     @Test
@@ -127,7 +127,7 @@ public class UserQuotaServiceTest {
 
         testClock.changeTime(cur -> cur.plus(1, ChronoUnit.DAYS));
 
-        assertTrue(sut.tryAcquire(USERNAME, RESOURCE_ID, 10));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
     }
 
     @Test
@@ -137,24 +137,24 @@ public class UserQuotaServiceTest {
                 .withQuotaManagerClassName(String.class.getName())
                 .build();
 
-        assertThrows(QuotaManagerNotRegisteredException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+        assertThrows(QuotaManagerNotRegisteredException.class, () -> sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1));
     }
 
     @Test
     void shouldFailFastIfResourceQuotaDoesNotExist() {
-        assertThrows(ResourceQuotaNotFoundException.class, () -> sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+        assertThrows(ResourceQuotaNotFoundException.class, () -> sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1));
     }
 
     @Test
-    void shouldRecoverStateFromUserQuotaIfExists() {
+    void shouldRecoverStateFromQuotaStateIfExists() {
         givenExistingResourceQuota()
                 .forResourceId(RESOURCE_ID)
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 10, Instant.EPOCH))
                 .build();
 
-        sut.tryAcquire(USERNAME, RESOURCE_ID, 10);
-        assertFalse(sut.tryAcquire(USERNAME, RESOURCE_ID, 1));
+        sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10);
+        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1));
     }
 
     private ResourceQuotaTestBuilder givenExistingResourceQuota() {
@@ -201,19 +201,19 @@ public class UserQuotaServiceTest {
         }
     }
 
-    private static class TestUserQuotaPersistence implements UserQuotaPersistence {
+    private static class TestQuotaPersistence implements QuotaPersistence {
 
 
-        private final Map<UserQuotaId, UserQuotaState> states = new HashMap<>();
+        private final Map<QuotaId, QuotaState> states = new HashMap<>();
 
         @Override
-        public Optional<UserQuotaState> findById(UserQuotaId userQuotaId) {
-            return Optional.ofNullable(states.get(userQuotaId));
+        public Optional<QuotaState> findById(QuotaId quotaId) {
+            return Optional.ofNullable(states.get(quotaId));
         }
 
         @Override
-        public UserQuotaState save(UserQuotaState userQuotaState) {
-            return states.put(userQuotaState.id(), userQuotaState);
+        public QuotaState save(QuotaState quotaState) {
+            return states.put(quotaState.id(), quotaState);
         }
     }
 
