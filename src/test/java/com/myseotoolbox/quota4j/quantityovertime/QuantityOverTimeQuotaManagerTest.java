@@ -1,11 +1,11 @@
-package io.github.quota4j.quantityovertime;
+package com.myseotoolbox.quota4j.quantityovertime;
 
 
-import io.github.quota4j.TestClock;
-import io.github.quota4j.persistence.QuotaManagerStateChangeListener;
-import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
-import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
-import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
+import com.myseotoolbox.quota4j.TestClock;
+import com.myseotoolbox.quota4j.persistence.QuotaManagerStateChangeListener;
+import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
+import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
+import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,4 +1,4 @@
-package io.github.quota4j.quotamanager;
+package com.myseotoolbox.quota4j.quotamanager;
 
 public interface QuotaManager<T> {
 

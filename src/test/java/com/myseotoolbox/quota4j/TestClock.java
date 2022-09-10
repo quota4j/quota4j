@@ -1,4 +1,4 @@
-package io.github.quota4j;
+package com.myseotoolbox.quota4j;
 
 import java.time.Clock;
 import java.time.Instant;

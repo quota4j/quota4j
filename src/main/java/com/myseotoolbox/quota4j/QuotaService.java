@@ -1,11 +1,11 @@
-package io.github.quota4j;
+package com.myseotoolbox.quota4j;
 
-import io.github.quota4j.model.ResourceQuota;
-import io.github.quota4j.model.QuotaId;
-import io.github.quota4j.model.QuotaState;
-import io.github.quota4j.persistence.ResourceQuotaPersistence;
-import io.github.quota4j.persistence.QuotaPersistence;
-import io.github.quota4j.quotamanager.QuotaManager;
+import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
+import com.myseotoolbox.quota4j.model.ResourceQuota;
+import com.myseotoolbox.quota4j.model.QuotaId;
+import com.myseotoolbox.quota4j.model.QuotaState;
+import com.myseotoolbox.quota4j.persistence.QuotaPersistence;
+import com.myseotoolbox.quota4j.quotamanager.QuotaManager;
 
 import java.util.HashMap;
 import java.util.Optional;

@@ -1,8 +1,8 @@
-package io.github.quota4j;
+package com.myseotoolbox.quota4j;
 
 
-import io.github.quota4j.model.ResourceQuota;
-import io.github.quota4j.quotamanager.QuotaManager;
+import com.myseotoolbox.quota4j.model.ResourceQuota;
+import com.myseotoolbox.quota4j.quotamanager.QuotaManager;
 
 public class ResourceQuotaBuilder {
 

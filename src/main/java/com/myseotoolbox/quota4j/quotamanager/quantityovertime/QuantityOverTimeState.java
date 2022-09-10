@@ -1,4 +1,4 @@
-package io.github.quota4j.quotamanager.quantityovertime;
+package com.myseotoolbox.quota4j.quotamanager.quantityovertime;
 
 import java.io.Serializable;
 import java.time.Instant;

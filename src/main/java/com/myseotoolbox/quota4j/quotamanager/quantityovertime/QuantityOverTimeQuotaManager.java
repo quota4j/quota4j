@@ -1,8 +1,8 @@
-package io.github.quota4j.quotamanager.quantityovertime;
+package com.myseotoolbox.quota4j.quotamanager.quantityovertime;
 
 
-import io.github.quota4j.persistence.QuotaManagerStateChangeListener;
-import io.github.quota4j.quotamanager.QuotaManager;
+import com.myseotoolbox.quota4j.persistence.QuotaManagerStateChangeListener;
+import com.myseotoolbox.quota4j.quotamanager.QuotaManager;
 
 import java.time.Clock;
 import java.time.Duration;

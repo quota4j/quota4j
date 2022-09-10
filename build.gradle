@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
 }
 
 
@@ -9,8 +10,8 @@ java {
     withJavadocJar()
 }
 
-group = 'com.myseotoolbox.' + rootProject.name
-version = '1.0.0-SNAPSHOT'
+group = 'com.myseotoolbox.quota4j'
+version = '1.0.6-SNAPSHOT'
 project.archivesBaseName = rootProject.name
 sourceCompatibility = '17'
 
@@ -26,6 +27,14 @@ dependencies {
     testImplementation "org.hamcrest:java-hamcrest:2.0.0.0"
 }
 
+artifacts {
+    archives jar, javadocJar, sourcesJar
+}
+
+signing {
+    sign publishing.publications
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }
@@ -37,4 +46,67 @@ tasks.named('jar') {
                 'Implementation-Version': project.version)
     }
 }
+
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                name = 'Quota4j'
+                description = 'A library to apply a quota to finite resources'
+                url = 'https://github.com/quota4j/quota4j'
+
+                developers {
+                    developer {
+                        id = 'snovelli'
+                        name = 'Salvatore'
+                    }
+                }
+                scm {
+                    connection='scm:git:git:github.com:quota4j/quota4j.git'
+                    developerConnection='scm:git:git:github.com:quota4j/quota4j.git'
+                    url='https://github.com/quota4j/quota4j'
+                }
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "OSSRH"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+
+            /*repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }*/
+
+            credentials {
+                username = ossrhUsername
+                password = ossrhPassword
+            }
+        }
+    }
+}
+
+
+
 

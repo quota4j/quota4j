@@ -1,4 +1,4 @@
-package io.github.quota4j;
+package com.myseotoolbox.quota4j;
 
 public class ResourceQuotaNotFoundException extends RuntimeException {
     public ResourceQuotaNotFoundException(String resourceId) {

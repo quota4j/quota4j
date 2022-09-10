@@ -1,7 +1,7 @@
-package io.github.quota4j.persistence;
+package com.myseotoolbox.quota4j.persistence;
 
-import io.github.quota4j.model.QuotaId;
-import io.github.quota4j.model.QuotaState;
+import com.myseotoolbox.quota4j.model.QuotaState;
+import com.myseotoolbox.quota4j.model.QuotaId;
 
 import java.util.Optional;
 

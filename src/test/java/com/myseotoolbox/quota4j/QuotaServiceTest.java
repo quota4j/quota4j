@@ -1,13 +1,13 @@
-package io.github.quota4j;
+package com.myseotoolbox.quota4j;
 
-import io.github.quota4j.model.ResourceQuota;
-import io.github.quota4j.model.QuotaId;
-import io.github.quota4j.model.QuotaState;
-import io.github.quota4j.persistence.ResourceQuotaPersistence;
-import io.github.quota4j.persistence.QuotaPersistence;
-import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
-import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
-import io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
+import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
+import com.myseotoolbox.quota4j.model.ResourceQuota;
+import com.myseotoolbox.quota4j.model.QuotaId;
+import com.myseotoolbox.quota4j.model.QuotaState;
+import com.myseotoolbox.quota4j.persistence.QuotaPersistence;
+import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
+import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
+import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.github.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit.limitOf;
+import static com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit.limitOf;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 

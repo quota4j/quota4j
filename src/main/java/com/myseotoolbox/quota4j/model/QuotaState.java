@@ -1,4 +1,4 @@
-package io.github.quota4j.model;
+package com.myseotoolbox.quota4j.model;
 
 import java.io.Serializable;
 
