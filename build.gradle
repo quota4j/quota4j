@@ -72,9 +72,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection='scm:git:git:github.com:quota4j/quota4j.git'
-                    developerConnection='scm:git:git:github.com:quota4j/quota4j.git'
-                    url='https://github.com/quota4j/quota4j'
+                    connection = 'scm:git:git:github.com:quota4j/quota4j.git'
+                    developerConnection = 'scm:git:git:github.com:quota4j/quota4j.git'
+                    url = 'https://github.com/quota4j/quota4j'
                 }
                 licenses {
                     license {
@@ -89,7 +89,7 @@ publishing {
     repositories {
         maven {
             name = "OSSRH"
-            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
 
             /*repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
@@ -100,11 +100,21 @@ publishing {
             }*/
 
             credentials {
-                username = ossrhUsername
-                password = ossrhPassword
+                username = System.getenv("OSSRH_USERNAME")
+                password = System.getenv("OSSRH_PASSWORD")
+            }
+        }
+
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/quota4j/quota4j"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
             }
         }
     }
+
 }
 
 
