@@ -1,6 +1,9 @@
 # Ignore Gradle project-specific cache directory
 .gradle
 
+gradle.properties
+secret.gpg
+
 # Ignore Gradle build output directory
 build
 target/
