@@ -38,7 +38,7 @@ signing {
     if (signingKey != null) {
         //In CI we have the key stored in ORG_GRADLE_PROJECT_signingKey instead of accessing file specified in
         // gradle.properties
-        logger.lifecycle('Using in memory pgp keys')
+        logger.lifecycle('Using in memory pgp keys:' + signingKey)
         def signingPassword = findProperty("signingKeyPassword")
         useInMemoryPgpKeys(signingKey, signingPassword)
     }
