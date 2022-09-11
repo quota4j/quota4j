@@ -31,7 +31,16 @@ artifacts {
     archives jar, javadocJar, sourcesJar
 }
 
+
 signing {
+
+    def signingKey = findProperty("signingKey")
+    if (signingKey != null) {
+        //In CI we have the key stored in ORG_GRADLE_PROJECT_signingKey instead of accessing file specified in
+        // gradle.properties
+        def signingPassword = findProperty("signingKeyPassword")
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
     sign publishing.publications
 }
 
@@ -100,17 +109,8 @@ publishing {
             }*/
 
             credentials {
-                username = System.getenv("OSSRH_USERNAME")
-                password = System.getenv("OSSRH_PASSWORD")
-            }
-        }
-
-        maven {
-            name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/quota4j/quota4j"
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+                username = findProperty("ossrhUsername")
+                password = findProperty("ossrhPassword")
             }
         }
     }
