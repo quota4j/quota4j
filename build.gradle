@@ -11,7 +11,7 @@ java {
 }
 
 group = 'com.myseotoolbox.quota4j'
-version = '1.0.6-SNAPSHOT'
+version = '1.0.6'
 project.archivesBaseName = rootProject.name
 sourceCompatibility = '17'
 
@@ -102,7 +102,7 @@ publishing {
     repositories {
         maven {
             name = "OSSRH"
-            url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
 
             /*repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
                 authentication(userName: ossrhUsername, password: ossrhPassword)
