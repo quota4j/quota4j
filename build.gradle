@@ -46,8 +46,8 @@ signing {
     sign publishing.publications
 }
 
-public String toHex(String arg) {
-    return String.format("%040x", new BigInteger(1, arg.getBytes()));
+public String toHex(String value) {
+    return "'" + HexFormat.of().formatHex(value.getBytes()) + "'";
 }
 
 tasks.named('test') {
