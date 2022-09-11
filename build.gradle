@@ -38,11 +38,15 @@ signing {
     if (signingKey != null) {
         //In CI we have the key stored in ORG_GRADLE_PROJECT_signingKey instead of accessing file specified in
         // gradle.properties
-        logger.lifecycle('Using in memory pgp keys:' + signingKey)
+        logger.lifecycle('Using in memory pgp keys:' + toHex(signingKey))
         def signingPassword = findProperty("signingKeyPassword")
         useInMemoryPgpKeys(signingKey, signingPassword)
     }
     sign publishing.publications
+}
+
+public String toHex(String arg) {
+    return String.format("%040x", new BigInteger(1, arg.getBytes()));
 }
 
 tasks.named('test') {
