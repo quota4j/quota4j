@@ -44,14 +44,9 @@ signing {
     sign publishing.publications
 }
 
-public String toHex(String value) {
-    return "'" + HexFormat.of().formatHex(value.getBytes()) + "'";
-}
-
 tasks.named('test') {
     useJUnitPlatform()
 }
-
 
 tasks.named('jar') {
     manifest {
