@@ -23,17 +23,26 @@ public class QuotaService {
 
     public boolean tryAcquire(String ownerId, String resourceId, int quantity) throws QuotaManagerNotRegisteredException {
         QuotaId quotaId = QuotaId.create(ownerId, resourceId);
-
-        QuotaState quotaState = quotaPersistence
-                .findById(quotaId)
-                .orElseGet(() -> createFromResourceQuota(quotaId));
-
-        return getQuotaManager(quotaId, quotaState)
+        QuotaState quotaState = getQuotaState(quotaId);
+        return getQuotaManager(quotaId, quotaState.quotaManagerClassName())
                 .tryConsume(quotaState.currentState(), quantity);
+    }
+
+    public long getRemaining(String ownerId, String resourceId) {
+        QuotaId quotaId = QuotaId.create(ownerId, resourceId);
+        QuotaState quotaState = getQuotaState(quotaId);
+        return getQuotaManager(quotaId, quotaState.quotaManagerClassName())
+                .getRemaining(quotaState.currentState());
     }
 
     public void registerQuotaManagerFactory(String className, QuotaManagerFactory quotaManagerFactory) {
         quotaManagerFactories.computeIfAbsent(className, ignored -> quotaManagerFactory);
+    }
+
+    private QuotaState getQuotaState(QuotaId quotaId) {
+        return quotaPersistence
+                .findById(quotaId)
+                .orElseGet(() -> createFromResourceQuota(quotaId));
     }
 
     private QuotaState createFromResourceQuota(QuotaId quotaId) {
@@ -41,15 +50,13 @@ public class QuotaService {
         return new QuotaState(quotaId, resourceQuota.quotaManagerClassName(), resourceQuota.initialState());
     }
 
-    private QuotaManager<Object> getQuotaManager(QuotaId quotaId, QuotaState quotaState) {
+    private QuotaManager<Object> getQuotaManager(QuotaId quotaId, String quotaManagerClassName) {
         QuotaManager<?> quotaManager = quotaManagers.computeIfAbsent(quotaId, it -> {
-            String quotaManagerClassName = quotaState.quotaManagerClassName();
             QuotaManagerFactory quotaManagerFactory = Optional.ofNullable(quotaManagerFactories.get(quotaManagerClassName)).orElseThrow(() -> new QuotaManagerNotRegisteredException(quotaManagerClassName));
             return quotaManagerFactory.build(state -> quotaPersistence.save(new QuotaState(quotaId, quotaManagerClassName, state)));
         });
         return (QuotaManager<Object>) quotaManager;
     }
-
 
 
 }
