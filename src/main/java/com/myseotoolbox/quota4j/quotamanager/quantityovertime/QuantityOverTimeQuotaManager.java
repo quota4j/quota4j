@@ -22,8 +22,8 @@ public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTi
     public boolean tryConsume(QuantityOverTimeState currentState, long quantity) {
         Instant requestInstant = clock.instant();
         currentState = refill(currentState, requestInstant);
-        if (currentState.remainingTokens() >= quantity) {
-            updateState(currentState, currentState.remainingTokens() - quantity, currentState.lastRefill());
+        if (currentState.available() >= quantity) {
+            updateState(currentState, currentState.available() - quantity, currentState.lastRefill());
             return true;
         } else {
             return false;
@@ -31,15 +31,15 @@ public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTi
     }
 
     @Override
-    public long getRemaining(QuantityOverTimeState currentState) {
-        currentState = refill(currentState, clock.instant());
-        return currentState.remainingTokens();
+    public QuantityOverTimeState getCurrentState(QuantityOverTimeState currentState) {
+        Instant requestInstant = clock.instant();
+        return refill(currentState, requestInstant);
     }
 
     private QuantityOverTimeState refill(QuantityOverTimeState currentState, Instant requestInstant) {
         Duration durationSinceLastRefill = Duration.between(currentState.lastRefill(), requestInstant);
         if (durationSinceLastRefill.compareTo(currentState.limit().duration()) >= 0) {
-            return updateState(currentState, currentState.limit().quantity(), requestInstant);
+            return updateState(currentState, Math.max(currentState.limit().quantity(), currentState.available()), requestInstant);
         }
         return currentState;
     }

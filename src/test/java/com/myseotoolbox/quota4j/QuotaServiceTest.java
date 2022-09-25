@@ -8,7 +8,6 @@ import com.myseotoolbox.quota4j.persistence.QuotaPersistence;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -110,7 +109,7 @@ public class QuotaServiceTest {
 
         sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1);
 
-        assertThat(sut.getRemaining(OWNER_ID, RESOURCE_ID), is(4L));
+        assertThat(((QuantityOverTimeState) sut.getQuotaState(OWNER_ID, RESOURCE_ID)).available(), is(4L));
     }
 
     @Test

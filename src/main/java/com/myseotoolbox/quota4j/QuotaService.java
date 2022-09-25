@@ -21,18 +21,18 @@ public class QuotaService {
         this.quotaPersistence = quotaPersistence;
     }
 
-    public boolean tryAcquire(String ownerId, String resourceId, int quantity) throws QuotaManagerNotRegisteredException {
+    public boolean tryAcquire(String ownerId, String resourceId, long quantity) throws QuotaManagerNotRegisteredException {
         QuotaId quotaId = QuotaId.create(ownerId, resourceId);
         QuotaState quotaState = getQuotaState(quotaId);
         return getQuotaManager(quotaId, quotaState.quotaManagerClassName())
                 .tryConsume(quotaState.currentState(), quantity);
     }
 
-    public long getRemaining(String ownerId, String resourceId) {
+    public Object getQuotaState(String ownerId, String resourceId) {
         QuotaId quotaId = QuotaId.create(ownerId, resourceId);
         QuotaState quotaState = getQuotaState(quotaId);
         return getQuotaManager(quotaId, quotaState.quotaManagerClassName())
-                .getRemaining(quotaState.currentState());
+                .getCurrentState(quotaState.currentState());
     }
 
     public void registerQuotaManagerFactory(String className, QuotaManagerFactory quotaManagerFactory) {

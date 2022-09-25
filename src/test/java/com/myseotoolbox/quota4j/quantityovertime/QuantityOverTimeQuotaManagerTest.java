@@ -83,10 +83,27 @@ public class QuantityOverTimeQuotaManagerTest {
     }
 
     @Test
-    public void shouldProvideRemainingQuantity() {
+    void resourceQuotaDefaultAvailableShouldNotBeOverride() {
+        // If I have a limit of 1/day and an initial available of 10, I want the user to be able to use the 10 available,
+        // even in 1 second and then start imposing limit.
+
+        givenQuantityOverTimeState()
+                .withLimit(TEN_PER_DAY_LIMIT)
+                .withAvailable(100)
+                .init();
+
+        sut.tryConsume(state, 10);
+        testClock.changeTime(instant -> instant.plus(2, ChronoUnit.DAYS));
+        assertThat(sut.getCurrentState(state).available(), is(90L));
+    }
+
+    @Test
+    public void shouldProvideCurrentState() {
         givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.tryConsume(state, 5);
-        assertThat(sut.getRemaining(state), is(5L));
+        assertThat(sut.getCurrentState(state).available(), is(5L));
+        assertThat(sut.getCurrentState(state).lastRefill(), is(Instant.EPOCH));
+        assertThat(sut.getCurrentState(state).limit(), is(TEN_PER_DAY_LIMIT));
     }
 
     @Test
@@ -94,44 +111,44 @@ public class QuantityOverTimeQuotaManagerTest {
         givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
         sut.tryConsume(state, 5);
         testClock.changeTime(curTime -> curTime.plus(1, ChronoUnit.DAYS));
-        assertThat(sut.getRemaining(state), is(10L));
+        assertThat(sut.getCurrentState(state).available(), is(10L));
     }
 
     @Test
     public void quotaIsNotCumulative() {
         givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
-        assertThat(sut.getRemaining(state), is(10L));
+        assertThat(sut.getCurrentState(state).available(), is(10L));
         testClock.changeTime(curTime -> curTime.plus(10, ChronoUnit.DAYS));
-        assertThat(sut.getRemaining(state), is(10L));
+        assertThat(sut.getCurrentState(state).available(), is(10L));
     }
 
     @Test
     void shouldReadRemainingTokensFromPassedState() {
         givenQuantityOverTimeState()
                 .withLimit(TEN_PER_DAY_LIMIT)
-                .withRemainingTokens(2)
+                .withAvailable(2)
                 .init();
 
-        assertThat(sut.getRemaining(state), is(2L));
+        assertThat(sut.getCurrentState(state).available(), is(2L));
     }
 
     @Test
     void shouldReadLastRefillFromPassedState() {
         givenQuantityOverTimeState()
                 .withLimit(TEN_PER_DAY_LIMIT)
-                .withRemainingTokens(2)
+                .withAvailable(2)
                 .withLastRefill(testClock.instant().minus(12, ChronoUnit.HOURS))
                 .init();
 
-        assertThat(sut.getRemaining(state), is(2L));
+        assertThat(sut.getCurrentState(state).available(), is(2L));
         testClock.changeTime(curTime -> curTime.plus(12, ChronoUnit.HOURS));
-        assertThat(sut.getRemaining(state), is(10L));
+        assertThat(sut.getCurrentState(state).available(), is(10L));
     }
 
     @Test
     void shouldNotPersistIfNoStateChange() {
         givenQuantityOverTimeState().withLimit(TEN_PER_DAY_LIMIT).init();
-        sut.getRemaining(state);
+        sut.getCurrentState(state).available();
         verify(quotaManagerStateChangeListener, never()).stateChanged(any());
     }
 
@@ -166,17 +183,17 @@ public class QuantityOverTimeQuotaManagerTest {
 
     private class QuantityOverTimeStateBuilder {
         private QuantityOverTimeLimit limit;
-        private long remainingTokens;
+        private long available;
         private Instant lastRefillInstant = testClock.instant();
 
         public QuantityOverTimeStateBuilder withLimit(QuantityOverTimeLimit limit) {
             this.limit = limit;
-            this.remainingTokens = limit.quantity();
+            this.available = limit.quantity();
             return this;
         }
 
-        public QuantityOverTimeStateBuilder withRemainingTokens(long remainingTokens) {
-            this.remainingTokens = remainingTokens;
+        public QuantityOverTimeStateBuilder withAvailable(long available) {
+            this.available = available;
             return this;
         }
 
@@ -186,7 +203,7 @@ public class QuantityOverTimeQuotaManagerTest {
         }
 
         public void init() {
-            state = new QuantityOverTimeState(limit, remainingTokens, lastRefillInstant);
+            state = new QuantityOverTimeState(limit, available, lastRefillInstant);
         }
     }
 
