@@ -1,10 +1,10 @@
 package com.myseotoolbox.quota4j;
 
-import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
-import com.myseotoolbox.quota4j.model.ResourceQuota;
 import com.myseotoolbox.quota4j.model.QuotaId;
 import com.myseotoolbox.quota4j.model.QuotaState;
+import com.myseotoolbox.quota4j.model.ResourceQuota;
 import com.myseotoolbox.quota4j.persistence.QuotaStatePersistence;
+import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
@@ -50,7 +50,7 @@ public class QuotaServiceTest {
     @BeforeEach
     void setUp() {
         sut = new QuotaService(resourceQuotaPersistence, quotaStatePersistence);
-        sut.registerQuotaManagerFactory(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(listener, testClock));
+        sut.registerQuotaManagerFactory(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(testClock));
     }
 
 
@@ -61,7 +61,7 @@ public class QuotaServiceTest {
                 .withQuotaManager(QuantityOverTimeQuotaManager.class)
                 .build();
 
-        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10).result());
     }
 
     @Test
@@ -72,7 +72,7 @@ public class QuotaServiceTest {
                 .build();
 
         sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10);
-        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1));
+        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1).result());
     }
 
     @Test
@@ -83,7 +83,7 @@ public class QuotaServiceTest {
                 .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
                 .build();
 
-        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
+        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10).result());
     }
 
     @Test
@@ -96,7 +96,7 @@ public class QuotaServiceTest {
 
         testClock.changeTime(cur -> cur.plus(1, ChronoUnit.DAYS));
 
-        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10).result());
     }
 
     @Test
@@ -110,6 +110,32 @@ public class QuotaServiceTest {
         sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1);
 
         assertThat(((QuantityOverTimeState) sut.getQuotaState(OWNER_ID, RESOURCE_ID)).available(), is(4L));
+    }
+
+    @Test
+    void shouldPersistAfterAcquire() {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManager(QuantityOverTimeQuotaManager.class)
+                .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
+                .build();
+
+        sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1);
+
+        assertThat(((QuantityOverTimeState) quotaStatePersistence.findById(QuotaId.create(OWNER_ID, RESOURCE_ID)).get().currentState()).available(), is(4L));
+    }
+
+    @Test
+    void gettingCurrentStatePersistsChanges() {
+        givenExistingResourceQuota()
+                .forResourceId(RESOURCE_ID)
+                .withQuotaManager(QuantityOverTimeQuotaManager.class)
+                .havingInitialState(new QuantityOverTimeState(TEN_PER_DAY_LIMIT, 5, Instant.EPOCH))
+                .build();
+
+        testClock.changeTime(cur -> cur.plus(1, ChronoUnit.DAYS));
+        sut.getQuotaState(OWNER_ID, RESOURCE_ID);
+        assertThat(((QuantityOverTimeState) quotaStatePersistence.findById(QuotaId.create(OWNER_ID, RESOURCE_ID)).get().currentState()).available(), is(10L));
     }
 
     @Test
@@ -136,7 +162,7 @@ public class QuotaServiceTest {
                 .build();
 
         sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10);
-        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1));
+        assertFalse(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 1).result());
     }
 
     @Test
@@ -149,8 +175,8 @@ public class QuotaServiceTest {
         sut.tryAcquire("OWNER1", RESOURCE_ID, 10);
         sut.tryAcquire("OWNER2", RESOURCE_ID, 5);
 
-        assertFalse(sut.tryAcquire("OWNER1", RESOURCE_ID, 1));
-        assertTrue(sut.tryAcquire("OWNER2", RESOURCE_ID, 5));
+        assertFalse(sut.tryAcquire("OWNER1", RESOURCE_ID, 1).result());
+        assertTrue(sut.tryAcquire("OWNER2", RESOURCE_ID, 5).result());
     }
 
     @Test
@@ -167,10 +193,10 @@ public class QuotaServiceTest {
                 .build();
 
 
-        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10));
-        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID2, 1));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID, 10).result());
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID2, 1).result());
         testClock.changeTime(instant -> instant.plusSeconds(1));
-        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID2, 1));
+        assertTrue(sut.tryAcquire(OWNER_ID, RESOURCE_ID2, 1).result());
     }
 
     private ResourceQuotaTestBuilder givenExistingResourceQuota() {

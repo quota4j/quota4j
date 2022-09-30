@@ -1,10 +1,11 @@
 package com.myseotoolbox.quota4j;
 
-import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
-import com.myseotoolbox.quota4j.model.ResourceQuota;
 import com.myseotoolbox.quota4j.model.QuotaId;
 import com.myseotoolbox.quota4j.model.QuotaState;
+import com.myseotoolbox.quota4j.model.ResourceQuota;
 import com.myseotoolbox.quota4j.persistence.QuotaStatePersistence;
+import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
+import com.myseotoolbox.quota4j.quotamanager.AcquireResponse;
 import com.myseotoolbox.quota4j.quotamanager.QuotaManager;
 
 import java.util.HashMap;
@@ -21,18 +22,22 @@ public class QuotaService {
         this.quotaStatePersistence = quotaStatePersistence;
     }
 
-    public boolean tryAcquire(String ownerId, String resourceId, long quantity) throws QuotaManagerNotRegisteredException {
+    public AcquireResponse<?> tryAcquire(String ownerId, String resourceId, long quantity) throws QuotaManagerNotRegisteredException {
         QuotaId quotaId = QuotaId.create(ownerId, resourceId);
         QuotaState quotaState = getQuotaState(quotaId);
-        return getQuotaManager(quotaId, quotaState.quotaManagerClassName())
-                .tryConsume(quotaState.currentState(), quantity);
+        AcquireResponse<?> response = getQuotaManager(quotaId, quotaState.quotaManagerClassName())
+                .tryAcquire(quotaState.currentState(), quantity);
+        quotaStatePersistence.save(quotaState.withUpdatedState(response.state()));
+        return response;
     }
 
     public Object getQuotaState(String ownerId, String resourceId) {
         QuotaId quotaId = QuotaId.create(ownerId, resourceId);
         QuotaState quotaState = getQuotaState(quotaId);
-        return getQuotaManager(quotaId, quotaState.quotaManagerClassName())
+        Object newState = getQuotaManager(quotaId, quotaState.quotaManagerClassName())
                 .getCurrentState(quotaState.currentState());
+        quotaStatePersistence.save(quotaState.withUpdatedState(newState));
+        return newState;
     }
 
     public void registerQuotaManagerFactory(String className, QuotaManagerFactory quotaManagerFactory) {

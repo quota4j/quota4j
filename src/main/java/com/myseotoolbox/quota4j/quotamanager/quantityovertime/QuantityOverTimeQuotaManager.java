@@ -1,7 +1,7 @@
 package com.myseotoolbox.quota4j.quotamanager.quantityovertime;
 
 
-import com.myseotoolbox.quota4j.persistence.QuotaManagerStateChangeListener;
+import com.myseotoolbox.quota4j.quotamanager.AcquireResponse;
 import com.myseotoolbox.quota4j.quotamanager.QuotaManager;
 
 import java.time.Clock;
@@ -10,23 +10,20 @@ import java.time.Instant;
 
 
 public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTimeState> {
-    private final QuotaManagerStateChangeListener stateChangeListener;
     private final Clock clock;
 
-    public QuantityOverTimeQuotaManager(QuotaManagerStateChangeListener listener, Clock clock) {
-        this.stateChangeListener = listener;
+    public QuantityOverTimeQuotaManager(Clock clock) {
         this.clock = clock;
     }
 
     @Override
-    public boolean tryConsume(QuantityOverTimeState currentState, long quantity) {
-        Instant requestInstant = clock.instant();
-        currentState = refill(currentState, requestInstant);
+    public AcquireResponse<QuantityOverTimeState> tryAcquire(QuantityOverTimeState state, long quantity) {
+        QuantityOverTimeState currentState = getCurrentState(state);
         if (currentState.available() >= quantity) {
-            updateState(currentState, currentState.available() - quantity, currentState.lastRefill());
-            return true;
+            QuantityOverTimeState newState = updateState(currentState, currentState.available() - quantity, currentState.lastRefill());
+            return AcquireResponse.grantedWithState(newState);
         } else {
-            return false;
+            return AcquireResponse.declinedWithState(currentState);
         }
     }
 
@@ -45,9 +42,7 @@ public class QuantityOverTimeQuotaManager implements QuotaManager<QuantityOverTi
     }
 
     private QuantityOverTimeState updateState(QuantityOverTimeState currentState, long quantity, Instant lastRefill) {
-        QuantityOverTimeState newState = new QuantityOverTimeState(currentState.limit(), quantity, lastRefill);
-        stateChangeListener.stateChanged(newState);
-        return newState;
+        return new QuantityOverTimeState(currentState.limit(), quantity, lastRefill);
     }
 
 
