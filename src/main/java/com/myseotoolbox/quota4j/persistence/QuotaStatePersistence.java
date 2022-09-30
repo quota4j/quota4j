@@ -5,7 +5,7 @@ import com.myseotoolbox.quota4j.model.QuotaId;
 
 import java.util.Optional;
 
-public interface QuotaPersistence {
+public interface QuotaStatePersistence {
     Optional<QuotaState> findById(QuotaId quotaId);
 
     QuotaState save(QuotaState quotaState);

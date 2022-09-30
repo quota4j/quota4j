@@ -4,7 +4,7 @@ import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
 import com.myseotoolbox.quota4j.model.ResourceQuota;
 import com.myseotoolbox.quota4j.model.QuotaId;
 import com.myseotoolbox.quota4j.model.QuotaState;
-import com.myseotoolbox.quota4j.persistence.QuotaPersistence;
+import com.myseotoolbox.quota4j.persistence.QuotaStatePersistence;
 import com.myseotoolbox.quota4j.quotamanager.QuotaManager;
 
 import java.util.HashMap;
@@ -12,13 +12,13 @@ import java.util.Optional;
 
 public class QuotaService {
     private final ResourceQuotaPersistence resourceQuotaPersistence;
-    private final QuotaPersistence quotaPersistence;
+    private final QuotaStatePersistence quotaStatePersistence;
     private final HashMap<String, QuotaManagerFactory> quotaManagerFactories = new HashMap<>();
     private final HashMap<QuotaId, QuotaManager<?>> quotaManagers = new HashMap<>();
 
-    public QuotaService(ResourceQuotaPersistence resourceQuotaPersistence, QuotaPersistence quotaPersistence) {
+    public QuotaService(ResourceQuotaPersistence resourceQuotaPersistence, QuotaStatePersistence quotaStatePersistence) {
         this.resourceQuotaPersistence = resourceQuotaPersistence;
-        this.quotaPersistence = quotaPersistence;
+        this.quotaStatePersistence = quotaStatePersistence;
     }
 
     public boolean tryAcquire(String ownerId, String resourceId, long quantity) throws QuotaManagerNotRegisteredException {
@@ -40,7 +40,7 @@ public class QuotaService {
     }
 
     private QuotaState getQuotaState(QuotaId quotaId) {
-        return quotaPersistence
+        return quotaStatePersistence
                 .findById(quotaId)
                 .orElseGet(() -> createFromResourceQuota(quotaId));
     }
@@ -53,7 +53,7 @@ public class QuotaService {
     private QuotaManager<Object> getQuotaManager(QuotaId quotaId, String quotaManagerClassName) {
         QuotaManager<?> quotaManager = quotaManagers.computeIfAbsent(quotaId, it -> {
             QuotaManagerFactory quotaManagerFactory = Optional.ofNullable(quotaManagerFactories.get(quotaManagerClassName)).orElseThrow(() -> new QuotaManagerNotRegisteredException(quotaManagerClassName));
-            return quotaManagerFactory.build(state -> quotaPersistence.save(new QuotaState(quotaId, quotaManagerClassName, state)));
+            return quotaManagerFactory.build(state -> quotaStatePersistence.save(new QuotaState(quotaId, quotaManagerClassName, state)));
         });
         return (QuotaManager<Object>) quotaManager;
     }

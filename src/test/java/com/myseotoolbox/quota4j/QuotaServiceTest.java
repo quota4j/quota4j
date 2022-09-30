@@ -4,7 +4,7 @@ import com.myseotoolbox.quota4j.persistence.ResourceQuotaPersistence;
 import com.myseotoolbox.quota4j.model.ResourceQuota;
 import com.myseotoolbox.quota4j.model.QuotaId;
 import com.myseotoolbox.quota4j.model.QuotaState;
-import com.myseotoolbox.quota4j.persistence.QuotaPersistence;
+import com.myseotoolbox.quota4j.persistence.QuotaStatePersistence;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeLimit;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeQuotaManager;
 import com.myseotoolbox.quota4j.quotamanager.quantityovertime.QuantityOverTimeState;
@@ -39,7 +39,7 @@ public class QuotaServiceTest {
 
     TestClock testClock = new TestClock();
 
-    private QuotaPersistence quotaPersistence = new TestQuotaPersistence();
+    private QuotaStatePersistence quotaStatePersistence = new TestQuotaStatePersistence();
 
     @Mock
     private ResourceQuotaPersistence resourceQuotaPersistence;
@@ -49,7 +49,7 @@ public class QuotaServiceTest {
 
     @BeforeEach
     void setUp() {
-        sut = new QuotaService(resourceQuotaPersistence, quotaPersistence);
+        sut = new QuotaService(resourceQuotaPersistence, quotaStatePersistence);
         sut.registerQuotaManagerFactory(QuantityOverTimeQuotaManager.class.getName(), listener -> new QuantityOverTimeQuotaManager(listener, testClock));
     }
 
@@ -217,7 +217,7 @@ public class QuotaServiceTest {
         }
     }
 
-    private static class TestQuotaPersistence implements QuotaPersistence {
+    private static class TestQuotaStatePersistence implements QuotaStatePersistence {
 
 
         private final Map<QuotaId, QuotaState> states = new HashMap<>();
