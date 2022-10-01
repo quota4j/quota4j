@@ -73,7 +73,7 @@ public class QuantityOverTimeQuotaManagerTest {
     }
 
     @Test
-    void resourceQuotaDefaultAvailableShouldNotBeOverride() {
+    void quotaDefaultAvailableShouldNotBeOverride() {
         // If I have a limit of 1/day and an initial available of 10, I want the user to be able to use the 10 available,
         // even in 1 second and then start imposing limit.
 
