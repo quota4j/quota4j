@@ -41,7 +41,7 @@ public class QuotaService {
     }
 
     public void registerQuotaManagerFactory(String className, QuotaManagerFactory quotaManagerFactory) {
-        quotaManagerFactories.computeIfAbsent(className, ignored -> quotaManagerFactory);
+        quotaManagerFactories.put(className, quotaManagerFactory);
     }
 
     private QuotaState getQuotaState(QuotaStateId quotaStateId) {
