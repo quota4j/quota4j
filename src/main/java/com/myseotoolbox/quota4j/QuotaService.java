@@ -47,10 +47,10 @@ public class QuotaService {
     private QuotaState getQuotaState(QuotaStateId quotaStateId) {
         return quotaStatePersistence
                 .findById(quotaStateId)
-                .orElseGet(() -> createFromQuota(quotaStateId));
+                .orElseGet(() -> createFor(quotaStateId));
     }
 
-    private QuotaState createFromQuota(QuotaStateId quotaStateId) {
+    private QuotaState createFor(QuotaStateId quotaStateId) {
         Quota quota = quotaPersistence.findById(quotaStateId.quotaId()).orElseThrow(() -> new QuotaNotFoundException(quotaStateId.quotaId()));
         return new QuotaState(quotaStateId, quota.quotaManagerClassName(), quota.defaultState());
     }
