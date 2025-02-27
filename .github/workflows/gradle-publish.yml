@@ -12,10 +12,18 @@ jobs:
           distribution: 'adopt'
       - name: Build with Gradle
         run: ./gradlew build
+      - name: Debug GitHub Secrets
+        run: |
+          echo "Checking if secrets are loaded..."
+          echo "SIGNING_KEY length: ${#SIGNING_KEY}"
+          echo "SIGNING_PASSWORD length: ${#SIGNING_PASSWORD}"
+        env:
+          SIGNING_KEY: ${{ secrets.PGP_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.PGP_PASSPHRASE }}
       - name: Publish with Gradle
         env:
           ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
           ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.PGP_KEY }}
           ORG_GRADLE_PROJECT_signingKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
-        run: ./gradlew publish
+        run: ./gradlew publish --info --stacktrace
